@@ -12,8 +12,10 @@ requires-python = ">=3.9"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 license = { file = "licenses/LICENSE.rst", content-type = "text/plain" }
 dependencies = [
-  'numpy',
-  'matplotlib',
+  "numpy",
+  "sunpy",
+  "scikit-image",
+  "matplotlib"
 ]
 dynamic = ["version"]
 
