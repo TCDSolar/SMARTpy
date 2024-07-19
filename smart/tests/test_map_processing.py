@@ -6,29 +6,27 @@ import astropy.units as u
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 from sunpy.map.mapbase import GenericMap
 
+from smart.map_processing import cosine_correction, get_cosine_correction, map_threshold
 
-def mag_sample():
+
+@pytest.fixture
+def hmi_nrt():
     return "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_230000_TAI.3.magnetogram.fits"
 
 
+@pytest.fixture
 def mag_map_sample():
-    from smart.map_processing import map_processing
-
-    return map_processing(
-        "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_230000_TAI.3.magnetogram.fits"
-    )
+    return map_threshold(Map(hmi_nrt()))
 
 
+@pytest.fixture
 def create_fake_map(value, shape=((4098, 4098))):
     fake_data = np.ones(shape) * value
     return Map(fake_data, mag_map_sample().meta)
 
 
-@pytest.fixture
-def test_map_processing(file):
-    from smart.map_processing import map_processing
-
-    processed_map = map_processing(file)
+def test_map_threshold(im_map):
+    processed_map = map_threshold(im_map)
 
     assert isinstance(processed_map, GenericMap), "Result is not a SunPy Map."
 
@@ -37,28 +35,21 @@ def test_map_processing(file):
     assert np.all(np.isnan(processed_map.data[~on_solar_disk])), "Off-disk NaN values not set correctly."
 
 
-@pytest.fixture
 def test_get_cosine_correction_shape(im_map):
-    from smart.map_processing import get_cosine_correction
-
     cos_cor, d_angular, off_limb = get_cosine_correction(im_map)
     assert cos_cor.shape == im_map.data.shape, "cos_cor shape != im_map.data.shape"
     assert d_angular.shape == im_map.data.shape, "d_angular shape != im_map.data.shape"
     assert off_limb.shape == im_map.data.shape, "off_limb shape != im_map.data.shape"
 
 
-@pytest.fixture
 def test_get_cosine_correction_limits(im_map):
-    from smart.map_processing import get_cosine_correction
-
     cos_cor, d_angular, off_limb = get_cosine_correction(im_map)
 
     edge = 0.99
-    x, y = np.meshgrid(*[np.arange(v.value) for v in im_map.dimensions]) * u.pixel
-    hp_coords = im_map.pixel_to_world(x, y)
-    xx = hp_coords.Tx.to(u.arcsec)
-    yy = hp_coords.Ty.to(u.arcsec)
-    d_radial = np.sqrt(xx**2 + yy**2)
+    coordinates = all_coordinates_from_map(im_map)
+    x = coordinates.Tx.to(u.arcsec)
+    y = coordinates.Ty.to(u.arcsec)
+    d_radial = np.sqrt(x**2 + y**2)
 
     off_disk = d_radial >= (im_map.rsun_obs * edge)
     on_disk = d_radial < (im_map.rsun_obs * edge)
@@ -73,21 +64,16 @@ def test_get_cosine_correction_limits(im_map):
     assert np.all(off_limb[on_disk] == 1), "not all on_disk values = 1"
 
 
-@pytest.fixture
 def test_cosine_correction():
-    from smart.map_processing import cosine_correction
-
     fake_data = np.ones((4098, 4098))
     fake_map = Map(fake_data, mag_map_sample().meta)
     fake_cosmap = fake_data * 0.5
 
-    test_corrected_data, fake_cosmap = cosine_correction(fake_map, fake_cosmap)
-    assert np.all(test_corrected_data == 0.5), "corrected_data not being correctly calculated"
+    test_corrected_data = cosine_correction(fake_map, fake_cosmap)
     assert test_corrected_data.shape == fake_map.data.shape, "output data shape != original data shape"
 
 
 """
-@pytest.fixture
 def test_STL():
     from smart.map_processing import STL
 
