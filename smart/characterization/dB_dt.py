@@ -64,43 +64,65 @@ def extract_features(sorted_labels):
     return feature_masks
 
 
-def dB_dt(im_map: Map, delta_im_map: Map):
+def dB_dt(current_map: Map, previous_map: Map):
     """
     A magnetogram differentially rotated to time 't' is subtracted from a processed magnetogram from time 't', and the resultant map is divided
     by their time separation, yielding a map of the temporal change in field strength.
 
     Parameters
     ----------
-    im_map : Map
+    current_map : Map
         Processed SunPy magnetogram map from time 't'.
-    delta_im_map : Map
+    previous_map : Map
         Processed SunPy magnetogram map from time 't - delta_t'.
 
     Returns
     -------
     dB_dt : Map
         Map showcasing the change in magnetic field strength over time.
+    dB : Quantity
+        The change in magnetic field strength.
+    dt : Quantity
+        The time interval over which the change in magnetic field strength was measured.
     """
-    diff_map = diff_rotation(im_map, delta_im_map)
+    diff_map = diff_rotation(current_map, previous_map)
 
-    dB = (im_map.data - diff_map.data) * u.Gauss
-    dt = (im_map.date - delta_im_map.date).to(u.s)
+    dB = (current_map.data - diff_map.data) * u.Gauss
+    dt = (current_map.date - previous_map.date).to(u.s)
 
-    dB_dt = Map(dB / dt, im_map.meta)
+    dB_dt = Map(dB / dt, current_map.meta)
     dB_dt.data[~coordinate_is_on_solar_disk(all_coordinates_from_map(dB_dt))] = np.nan
     dB_dt.cmap.set_bad("k")
-    return dB_dt
+    return dB_dt, dB, dt
 
 
-def get_flux_emergence_rates(im_map, delta_im_map, sorted_labels):
-    dBdt, dB, dt = dB_dt(im_map, delta_im_map)
+def get_flux_emergence_rates(im_map, sorted_labels, dB_dt, dt):
+    """
+    Calculate the flux emergence rate for each identified feature on the magnetogram.
+
+    Parameters
+    ----------
+    im_map : Map
+        Processed SunPy magnetogram map.
+    sorted_labels : numpy.ndarray
+        An array where each unique label corresponds to a different feature on the solar disk.
+    dB_dt : Map
+        Map showcasing the change in magnetic field strength over time.
+    dt : Quantity
+        The time interval over which the change in magnetic field strength was measured.
+
+    Returns
+    -------
+    emergence_rates : list of Quantity
+        A list containing values for the flux emergence rate for each labelled feature in Gauss per second.
+    """
     feature_masks = extract_features(sorted_labels)
 
     emergence_rates = []
     for feature_mask in feature_masks:
         area_map, total_area = cosine_weighted_area_map(im_map, feature_mask)
 
-        magnetic_flux = np.nansum(dBdt.data * area_map)
+        magnetic_flux = np.nansum(dB_dt.data * area_map)
 
         flux_emergence_rate = magnetic_flux / dt
 
