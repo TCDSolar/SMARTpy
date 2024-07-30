@@ -30,7 +30,7 @@ def map_threshold(im_map):
 
 
 @u.quantity_input
-def STL(
+def smooth_los_threshold(
     im_map: Map,
     thresh: u.Quantity[u.Gauss] = 100 * u.Gauss,
     dilation_radius: u.Quantity[u.arcsec] = 2 * u.arcsec,
@@ -65,10 +65,10 @@ def STL(
 
     """
 
-    arcsec_to_pixel = ((im_map.scale[0] + im_map.scale[1]) / 2) ** (-1)
-    dilation_radius = (np.round(dilation_radius * arcsec_to_pixel)).to_value(u.pix)
-    sigma = (np.round(sigma * arcsec_to_pixel)).to_value(u.pix)
-    min_size = (np.round(min_size * arcsec_to_pixel)).to_value(u.pix)
+    pixel_size = (im_map.scale[0] + im_map.scale[1]) / 2
+    dilation_radius = (np.round(dilation_radius / pixel_size)).to_value(u.pix)
+    sigma = (np.round(sigma / pixel_size)).to_value(u.pix)
+    min_size = (np.round(min_size / pixel_size)).to_value(u.pix)
 
     cosmap_data = cosine_correction(im_map)
 

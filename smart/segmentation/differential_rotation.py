@@ -24,4 +24,4 @@ def diff_rotation(im_map: Map, delta_im_map: Map):
     with propagate_with_solar_surface():
         diff_map = delta_im_map.reproject_to(im_map.wcs)
 
-    return diff_map
+    return diff_map, delta_im_map.date
