@@ -26,14 +26,16 @@ def cosine_weighted_area_map(im_map: Map, feature_mask):
         The area map of the feature in square metres.
     """
     coords = all_coordinates_from_map(im_map)
+
     cos_weight = np.cos(coords.Tx.to(u.rad)) * np.cos(coords.Ty.to(u.rad))
     cos_weight[cos_weight < 0] = 0
 
     m_per_arcsec = im_map.rsun_meters / im_map.rsun_obs
-
     pixel_area = (im_map.scale[0] * m_per_arcsec) * (im_map.scale[1] * m_per_arcsec)
+    pixel_area = pixel_area * u.pix**2
 
-    area_map = (feature_mask * u.pix**2) * cos_weight * pixel_area
+    area_map = feature_mask * pixel_area * cos_weight
+
     total_area = np.sum(area_map)
 
     return total_area, area_map
@@ -129,3 +131,65 @@ def get_flux_emergence_rates(im_map, sorted_labels, dB_dt, dt):
         emergence_rates.append(flux_emergence_rate)
 
     return emergence_rates
+
+
+def get_properties(im_map, dB_dt, dt, sorted_labels):
+    """
+    Calculate various properties from each detected feature.
+
+    Parameters
+    ----------
+    im_map : Map
+        Processed SunPy magnetogram map.
+    dB_dt : Map
+        Map showcasing the change in magnetic field strength over time.
+    dt : Quantity
+        The time interval over which the change in magnetic field strength was measured.
+    sorted_labels : numpy.ndarray
+        An array where each unique label corresponds to a different feature on the solar disk.
+
+    Returns
+    -------
+    properties : list
+        A list containing properties related to each individual feature
+    """
+
+    feature_masks = extract_features(sorted_labels)
+
+    properties = []
+    for i, feature_mask in enumerate(feature_masks, start=1):
+        total_area, area_map = cosine_weighted_area_map(im_map, feature_mask)
+
+        dBdt_data = dB_dt.data * u.G
+
+        magnetic_flux = np.nansum(dBdt_data * area_map)
+        flux_emergence_rate = magnetic_flux / dt
+
+        B = im_map.data * feature_mask * u.G
+        B_mean = np.nanmean(B)
+        B_std = np.nanstd(B)
+        B_min = np.nanmin(B)
+        B_max = np.nanmax(B)
+
+        flux_pos = np.nansum(B[B > 0] * area_map[B > 0])
+        flux_neg = np.nansum(B[B < 0] * area_map[B < 0])
+        flux_uns = np.nansum(np.abs(B) * area_map)
+        flux_imb = (flux_pos - flux_neg) / (flux_pos + flux_neg)
+
+        properties.append(
+            {
+                "feature label": i,
+                "flux emergence rate": flux_emergence_rate.to(u.Wb / u.s),
+                "mean B": B_mean.to(u.G),
+                "std B": B_std.to(u.G),
+                "minimum B": B_min.to(u.G),
+                "maximum B": B_max.to(u.G),
+                "positive flux": flux_pos.to(u.Wb),
+                "negative flux": flux_neg.to(u.Wb),
+                "unsigned flux": flux_uns.to(u.Wb),
+                "flux imbalance": flux_imb,
+                "total area": total_area.to(u.m**2),
+            }
+        )
+
+    return properties
