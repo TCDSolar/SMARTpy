@@ -7,10 +7,12 @@ import astropy.units as u
 
 from sunpy.map import Map
 
-from smart.map_processing import STL
+from smart.map_processing import smooth_los_threshold
 
 
-def IGM(im_map: Map, diff_map: Map, dilation_radius: u.Quantity[u.arcsec] = 2.5 * u.arcsec):
+def indexed_grown_mask(
+    current_map: Map, rotated_map: Map, dilation_radius: u.Quantity[u.arcsec] = 2.5 * u.arcsec
+):
     """
     Performing Indexing and Growing of the Mask (hence the name IGM).
 
@@ -20,9 +22,9 @@ def IGM(im_map: Map, diff_map: Map, dilation_radius: u.Quantity[u.arcsec] = 2.5 
 
     Parameters
     ----------
-    im_map : Map
+    current_map : Map
         Processed magnetogram map from time 't'.
-    diff_map : Map
+    rotated_map : Map
         Processed magnetogtam map from time 't - delta_t' differentially rotated to time t.
     dilation_radius : int, optional
         Radius of the disk for binary dilation (default is 2.5 arcsecs).
@@ -34,11 +36,11 @@ def IGM(im_map: Map, diff_map: Map, dilation_radius: u.Quantity[u.arcsec] = 2.5 
         values (beginning with one) in order of decreasing feature size.
 
     """
-    arcsec_to_pixel = ((im_map.scale[0] + im_map.scale[1]) / 2) ** (-1)
+    arcsec_to_pixel = ((current_map.scale[0] + current_map.scale[1]) / 2) ** (-1)
     dilation_radius = (np.round(dilation_radius * arcsec_to_pixel)).to_value(u.pix)
 
-    filtered_labels = STL(im_map)[1]
-    filtered_labels_dt = STL(diff_map)[1]
+    filtered_labels = smooth_los_threshold(current_map)[1]
+    filtered_labels_dt = smooth_los_threshold(rotated_map)[1]
 
     dilated_mask = ski.morphology.binary_dilation(filtered_labels, disk(dilation_radius))
     dilated_mask_dt = ski.morphology.binary_dilation(filtered_labels_dt, disk(dilation_radius))
@@ -58,15 +60,15 @@ def IGM(im_map: Map, diff_map: Map, dilation_radius: u.Quantity[u.arcsec] = 2.5 
     return sorted_labels
 
 
-def plot_IGM(im_map: Map, diff_map: Map, contours=True, labels=True, figtext=True):
+def plot_indexed_grown_mask(current_map: Map, rotated_map: Map, contours=True, labels=True, figtext=True):
     """
     Plotting the fully processed and segmented magnetogram with labels and AR contours optionally displayed.
 
     Parameters
     ----------
-    im_map : Map
+    current_map : Map
         Processed magnetogram map from time 't'.
-    diff_map : Map
+    rotated_map : Map
         Processed magnetogtam map from time 't - delta_t' differentially rotated to time t.
     contours : bool, optional
         If True, contours of the detected regions displayed on map (default is True).
@@ -80,11 +82,11 @@ def plot_IGM(im_map: Map, diff_map: Map, contours=True, labels=True, figtext=Tru
     None.
 
     """
-    sorted_labels = IGM(im_map, diff_map)
+    sorted_labels = indexed_grown_mask(current_map, rotated_map)
 
     fig = plt.figure()
-    ax = fig.add_subplot(projection=im_map)
-    im_map.plot(axes=ax)
+    ax = fig.add_subplot(projection=current_map)
+    current_map.plot(axes=ax)
 
     unique_labels = np.unique(sorted_labels)
     unique_labels = unique_labels[unique_labels != 0]

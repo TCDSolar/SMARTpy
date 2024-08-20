@@ -30,7 +30,7 @@ def map_threshold(im_map):
 
 
 @u.quantity_input
-def STL(
+def smooth_los_threshold(
     im_map: Map,
     thresh: u.Quantity[u.Gauss] = 100 * u.Gauss,
     dilation_radius: u.Quantity[u.arcsec] = 2 * u.arcsec,
