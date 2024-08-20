@@ -5,8 +5,8 @@ smart Documentation
 This is the documentation for smart.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+
+    ../generated/gallery/index
 
 Indices and tables
 ==================
