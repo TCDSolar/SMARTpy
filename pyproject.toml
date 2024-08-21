@@ -13,7 +13,7 @@ readme = { file = "README.rst", content-type = "text/x-rst" }
 license = { file = "licenses/LICENSE.rst", content-type = "text/plain" }
 dependencies = [
   "numpy",
-  "sunpy",
+  "sunpy[map]",
   "scikit-image",
   "matplotlib"
 ]

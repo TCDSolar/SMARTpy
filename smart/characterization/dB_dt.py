@@ -4,6 +4,7 @@ import astropy.units as u
 
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 
+from smart.map_processing import get_cosine_correction
 from smart.segmentation.differential_rotation import diff_rotation
 
 
@@ -25,16 +26,13 @@ def cosine_weighted_area_map(im_map: Map, feature_mask):
     area_map : astropy.units.quantity.Quantity
         The area map of the feature in square metres.
     """
-    coords = all_coordinates_from_map(im_map)
-
-    cos_weight = np.cos(coords.Tx.to(u.rad)) * np.cos(coords.Ty.to(u.rad))
-    cos_weight[cos_weight < 0] = 0
+    cos_cor = get_cosine_correction(im_map)[0]
 
     m_per_arcsec = im_map.rsun_meters / im_map.rsun_obs
     pixel_area = (im_map.scale[0] * m_per_arcsec) * (im_map.scale[1] * m_per_arcsec)
     pixel_area = pixel_area * u.pix**2
 
-    area_map = feature_mask * pixel_area * cos_weight
+    area_map = feature_mask * pixel_area * cos_cor
 
     total_area = np.sum(area_map)
 
@@ -135,7 +133,7 @@ def get_flux_emergence_rates(im_map, sorted_labels, dB_dt, dt):
 
 def get_properties(im_map, dB_dt, dt, sorted_labels):
     """
-    Calculate various properties from each detected feature.
+    Calculate various properties for each detected feature.
 
     Parameters
     ----------

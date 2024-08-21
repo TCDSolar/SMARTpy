@@ -11,7 +11,7 @@ from smart.map_processing import cosine_correction, get_cosine_correction, map_t
 
 @pytest.fixture
 def hmi_nrt():
-    return "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_230000_TAI.3.magnetogram.fits"
+    return "http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_230000_TAI.fits"
 
 
 @pytest.fixture

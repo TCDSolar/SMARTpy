@@ -107,26 +107,22 @@ def get_cosine_correction(im_map: Map):
         Binary array where pixels on the disk are 1 and pixels off the disk are 0.
     """
 
-    # Take off an extra percent from the disk to get rid of limb effects
-    edge = 0.99
-
     coordinates = all_coordinates_from_map(im_map)
     x = coordinates.Tx.to(u.arcsec)
     y = coordinates.Ty.to(u.arcsec)
-    d_radial = np.sqrt(x**2 + y**2)
 
-    cos_cor_ratio = d_radial / im_map.rsun_obs
+    radial_angle = np.arccos(np.cos(x) * np.cos(y))
+    cos_cor_ratio = (radial_angle / im_map.rsun_obs).value
     cos_cor_ratio = np.clip(cos_cor_ratio, -1, 1)
-    d_angular = np.arcsin(cos_cor_ratio)
-    cos_cor = 1 / np.cos(d_angular)
 
-    off_disk = d_radial > (im_map.rsun_obs * edge)
-    cos_cor[off_disk] = 1
+    cos_correction = 1 / (np.cos(np.arcsin(cos_cor_ratio)))
 
-    off_limb = np.zeros_like(d_radial.value)
-    off_limb[off_disk] = 0
-    off_limb[~off_disk] = 1
-    return cos_cor, d_angular, off_limb
+    on_disk = coordinate_is_on_solar_disk(coordinates)
+    cos_correction[~on_disk] = 1
+    off_limb = np.zeros_like(cos_correction)
+    off_limb[on_disk] = 1
+
+    return cos_correction, radial_angle, off_limb
 
 
 def cosine_correction(im_map: Map, cosmap=None):
@@ -152,7 +148,7 @@ def cosine_correction(im_map: Map, cosmap=None):
 
     scale = (im_map.scale[0] + im_map.scale[1]) / 2
 
-    angle_limit = np.arcsin(1 - (scale / im_map.rsun_obs).value)
+    angle_limit = (scale / im_map.rsun_obs).value
     cos_limit = 1 / np.cos(angle_limit)
     cosmap = np.clip(cosmap, None, cos_limit)
 
