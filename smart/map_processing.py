@@ -16,12 +16,12 @@ def map_threshold(im_map):
 
     Parameters
     ----------
-    in_map : `~sunpy.map.Map`
+    im_map : `~sunpy.map.Map`
         Unprocessed magnetogram map.
 
     Returns
     -------
-    im_map : Map
+    im_map : `~sunpy.map.Map`
         Processed magnetogram map.
 
     """
@@ -45,7 +45,7 @@ def smooth_los_threshold(
 
     Parameters
     ----------
-    im_map : `Map`
+    im_map : ``~sunpy.map.Map``
         Processed SunPy magnetogram map.
     thresh : `int`, optional
         Threshold value to identify regions of interest (default is 100 Gauss).
@@ -58,11 +58,11 @@ def smooth_los_threshold(
 
     Returns
     -------
-    smooth_map : `Map`
+    smooth_map : `~sunpy.map.Map`
         Map after applying Gaussian smoothing.
-    filtered_labels : numpy.ndarray
+    filtered_labels : `numpy.ndarray`
         2D array with each pixel labelled.
-    mask_sizes : numpy.ndarray
+    mask_sizes : `numpy.ndarray`
         Boolean array indicating the sizes of each labeled region.
 
     """
@@ -96,16 +96,16 @@ def get_cosine_correction(im_map: Map):
 
     Parameters
     ----------
-    im_map : Map
+    im_map : `~sunpy.map.Map`
         Processed SunPy magnetogram map.
 
     Returns
     -------
-    cos_cor : numpy.ndarray
+    cos_cor : `numpy.ndarray`
         Array of cosine correction factors for each pixel. Values greater than a threshold (edge) are set to 1.
-    d_angular : numpy.ndarray
+    d_angular : `numpy.ndarray`
         Array of angular distances from the disk center in radians.
-    off_limb : numpy.ndarray
+    off_limb : `numpy.ndarray`
         Binary array where pixels on the disk are 1 and pixels off the disk are 0.
     """
 
@@ -133,15 +133,15 @@ def cosine_correction(im_map: Map, cosmap=None):
 
     Parameters
     ----------
-    inmap : Map
+    im_map : `~sunpy.map.Map`
         Processed SunPy magnetogram map.
-    cosmap : numpy.ndarray, optional
+    cosmap : `numpy.ndarray`, optional
         An array of the cosine correction factors for each pixel.
         If not provided, computed using get_cosine_correction.
 
     Returns
     -------
-    corrected_data : numpy.ndarray
+    corrected_data : `~numpy.ndarray`
         The magnetic field data after applying the cosine correction (units = Gauss).
 
     """

@@ -9,6 +9,8 @@ from sunpy.map import Map
 
 from smart.map_processing import smooth_los_threshold
 
+__all__ = ["indexed_grown_mask", "plot_indexed_grown_mask"]
+
 
 def indexed_grown_mask(
     current_map: Map, rotated_map: Map, dilation_radius: u.Quantity[u.arcsec] = 2.5 * u.arcsec
@@ -22,16 +24,16 @@ def indexed_grown_mask(
 
     Parameters
     ----------
-    current_map : Map
+    current_map : `~sunpy.map.Map`
         Processed magnetogram map from time 't'.
-    rotated_map : Map
+    rotated_map : `~sunpy.map.Map`
         Processed magnetogtam map from time 't - delta_t' differentially rotated to time t.
-    dilation_radius : int, optional
+    dilation_radius : `int`, optional
         Radius of the disk for binary dilation (default is 2.5 arcsecs).
 
     Returns
     -------
-    sorted_labels : numpy.ndarray
+    sorted_labels : `~numpy.ndarray`
         Individual contiguous features are indexed by assigning ascending integer
         values (beginning with one) in order of decreasing feature size.
 
@@ -60,21 +62,21 @@ def indexed_grown_mask(
     return sorted_labels
 
 
-def plot_indexed_grown_mask(current_map: Map, rotated_map: Map, contours=True, labels=True, figtext=True):
+def plot_indexed_grown_mask(current_map: Map, sorted_labels, contours=True, labels=True, figtext=True):
     """
     Plotting the fully processed and segmented magnetogram with labels and AR contours optionally displayed.
 
     Parameters
     ----------
-    current_map : Map
+    current_map : `~sunpy.map.Map`
         Processed magnetogram map from time 't'.
-    rotated_map : Map
+    sorted_labels : `~sunpy.map.Map`
         Processed magnetogtam map from time 't - delta_t' differentially rotated to time t.
-    contours : bool, optional
+    contours : `bool`, optional
         If True, contours of the detected regions displayed on map (default is True).
-    labels : bool, optional
+    labels : `bool`, optional
         If True, labels with the region numbers will be overlaid on the regions (default is True).
-    figtext : bool, optional
+    figtext : `bool`, optional
         If True, figtext with the total number of detected regions is displayed on the map (default is True).
 
     Returns
@@ -82,8 +84,6 @@ def plot_indexed_grown_mask(current_map: Map, rotated_map: Map, contours=True, l
     None.
 
     """
-    sorted_labels = indexed_grown_mask(current_map, rotated_map)
-
     fig = plt.figure()
     ax = fig.add_subplot(projection=current_map)
     current_map.plot(axes=ax)

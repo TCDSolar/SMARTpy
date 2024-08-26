@@ -1,27 +1,27 @@
 from sunpy.coordinates import propagate_with_solar_surface
 from sunpy.map import Map
 
+__all__ = ["diff_rotation"]
 
-def diff_rotation(im_map: Map, delta_im_map: Map):
+
+def diff_rotation(ref_map: Map, im_map: Map):
     """
-    Performing differential rotation on a map in order to to correct for feature
-    motions due to solar rotation.
+    Differentially rotate input map to reference map.
 
     Parameters
     ----------
-    im_map : Map
-        Processed SunPy magnetogram map.
-    delta_im_map : Map
-        Processed SunPy magnetogram taken at time Δt before im_map.
+    ref_map : `~sunpy.map.Map`
+        Reference map.
+    im_map : `~sunpy.map.Map`
+        Map to be reprojected.
 
     Returns
     -------
-    diff_map : Map
-        delta_im_map differentially rotated to match im_map.
-
+    diff_map : `~sunpy.map.Map`
+        Differentially rotated map.
     """
 
     with propagate_with_solar_surface():
-        diff_map = delta_im_map.reproject_to(im_map.wcs)
+        diff_map = im_map.reproject_to(ref_map.wcs)
 
     return diff_map

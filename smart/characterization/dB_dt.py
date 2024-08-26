@@ -10,7 +10,7 @@ from smart.map_processing import get_cosine_correction
 
 def cosine_weighted_area_map(im_map: Map, feature_mask):
     """
-    Calculate the cosine-weighted area map for a feature and determine the feature's total area (in square metres).
+    Calculate the cosine-weighted area map for a feature and determine the feature's total area.
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def cosine_weighted_area_map(im_map: Map, feature_mask):
     total_area : astropy.units.quantity.Quantity
         The total area of the feature in square metres.
     area_map : astropy.units.quantity.Quantity
-        The area map of the feature in square metres.
+        Area map corrected for cosine projection.
     """
     cos_cor = get_cosine_correction(im_map)[0]
 
@@ -93,7 +93,7 @@ def dB_dt(current_map: Map, previous_map: Map):
     dB_dt = Map(dB / dt, current_map.meta)
     dB_dt.data[~coordinate_is_on_solar_disk(all_coordinates_from_map(dB_dt))] = np.nan
     dB_dt.cmap.set_bad("k")
-    return dB_dt, dB, dt
+    return dB_dt, dt
 
 
 def get_flux_emergence_rates(im_map, sorted_labels, dB_dt, dt):
