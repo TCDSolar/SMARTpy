@@ -7,7 +7,7 @@ import astropy.units as u
 
 from sunpy.map import Map
 
-from smart.segmentation.map_processing import smooth_los_threshold
+from smart.map_processing import smooth_los_threshold
 
 
 def index_and_grow_mask(

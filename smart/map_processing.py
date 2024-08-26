@@ -7,14 +7,16 @@ import astropy.units as u
 
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 
+__all__ = ["map_threshold", "get_cosine_correction", "cosine_correction", "smooth_los_threshold"]
+
 
 def map_threshold(im_map):
     """
-    Creating a map from a fits file and processing said map.
+     a map from a fits file and processing said map.
 
     Parameters
     ----------
-    file : Map
+    in_map : `~sunpy.map.Map`
         Unprocessed magnetogram map.
 
     Returns
@@ -43,20 +45,20 @@ def smooth_los_threshold(
 
     Parameters
     ----------
-    im_map : Map
+    im_map : `Map`
         Processed SunPy magnetogram map.
-    thresh : int, optional
+    thresh : `int`, optional
         Threshold value to identify regions of interest (default is 100 Gauss).
-    dilation_radius : int, optional
+    dilation_radius : `int`, optional
         Radius of the disk for binary dilation (default is 2 arcsecs).
-    sigma : int, optional
+    sigma : `int`, optional
         Standard deviation for Gaussian smoothing (default is 10 arcsecs).
-    min_size : int, optional
+    min_size : `int`, optional
         Minimum size of regions to keep in final mask (default is 2250 arcsecs**2).
 
     Returns
     -------
-    smooth_map : Map
+    smooth_map : `Map`
         Map after applying Gaussian smoothing.
     filtered_labels : numpy.ndarray
         2D array with each pixel labelled.

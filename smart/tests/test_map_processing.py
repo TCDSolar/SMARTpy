@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 import pytest
 
@@ -15,8 +17,8 @@ def hmi_nrt():
 
 
 @pytest.fixture
-def mag_map_sample():
-    return map_threshold(Map(hmi_nrt()))
+def mag_map_sample(hmi_nrt):
+    return map_threshold(Map(hmi_nrt))
 
 
 @pytest.fixture
@@ -25,8 +27,8 @@ def create_fake_map(value, shape=((4098, 4098))):
     return Map(fake_data, mag_map_sample().meta)
 
 
-def test_map_threshold(im_map):
-    processed_map = map_threshold(im_map)
+def test_map_threshold(mag_map_sample):
+    processed_map = map_threshold(mag_map_sample)
 
     assert isinstance(processed_map, GenericMap), "Result is not a SunPy Map."
 
@@ -35,24 +37,20 @@ def test_map_threshold(im_map):
     assert np.all(np.isnan(processed_map.data[~on_solar_disk])), "Off-disk NaN values not set correctly."
 
 
-def test_get_cosine_correction_shape(im_map):
-    cos_cor, d_angular, off_limb = get_cosine_correction(im_map)
-    assert cos_cor.shape == im_map.data.shape, "cos_cor shape != im_map.data.shape"
-    assert d_angular.shape == im_map.data.shape, "d_angular shape != im_map.data.shape"
-    assert off_limb.shape == im_map.data.shape, "off_limb shape != im_map.data.shape"
+def test_get_cosine_correction_shape(mag_map_sample):
+    cos_cor, d_angular, off_limb = get_cosine_correction(mag_map_sample)
+    assert cos_cor.shape == mag_map_sample.data.shape, "cos_cor shape != hmi_nrt.data.shape"
+    assert d_angular.shape == mag_map_sample.data.shape, "d_angular shape != im_map.data.shape"
+    assert off_limb.shape == mag_map_sample.data.shape, "off_limb shape != im_map.data.shape"
 
 
-def test_get_cosine_correction_limits(im_map):
-    cos_cor, d_angular, off_limb = get_cosine_correction(im_map)
+def test_get_cosine_correction_limits(mag_map_sample):
+    cos_cor, d_angular, off_limb = get_cosine_correction(mag_map_sample)
 
     edge = 0.99
-    coordinates = all_coordinates_from_map(im_map)
-    x = coordinates.Tx.to(u.arcsec)
-    y = coordinates.Ty.to(u.arcsec)
-    d_radial = np.sqrt(x**2 + y**2)
-
-    off_disk = d_radial >= (im_map.rsun_obs * edge)
-    on_disk = d_radial < (im_map.rsun_obs * edge)
+    coordinates = all_coordinates_from_map(mag_map_sample)
+    on_disk = coordinate_is_on_solar_disk(coordinates)
+    off_disk = ~on_disk
 
     assert np.all(cos_cor >= 0), "cos_cor lower limits incorrect"
     assert np.all(cos_cor <= 1 / np.cos(np.arcsin(edge))), "cos_cor upper limits incorrect"
@@ -64,12 +62,12 @@ def test_get_cosine_correction_limits(im_map):
     assert np.all(off_limb[on_disk] == 1), "not all on_disk values = 1"
 
 
-def test_cosine_correction(im_map):
-    coordinates = all_coordinates_from_map(im_map)
+def test_cosine_correction(mag_map_sample):
+    coordinates = all_coordinates_from_map(mag_map_sample)
 
     los_radial = np.cos(coordinates.Tx.to(u.rad)) * np.cos(coordinates.Ty.to(u.rad))
 
-    fake_map = Map(los_radial, im_map.meta)
+    fake_map = Map(los_radial, mag_map_sample.meta)
     fake_cosmap = np.ones((len(los_radial), len(los_radial)))
 
     corrected_data = cosine_correction(fake_map, fake_cosmap)
@@ -77,9 +75,11 @@ def test_cosine_correction(im_map):
     assert np.allclose(corrected_data_value, 1, atol=1e-4), "cosine corrected data not behaving as expected"
 
 
-def test_smooth_los_threshold():
-    under_thresh = create_fake_map(1)
-    over_thresh = create_fake_map(1000)
+def test_smooth_los_threshold(mag_map_sample):
+    under_thresh = deepcopy(mag_map_sample)
+    under_thresh.data[:, :] = 1
+    over_thresh = deepcopy(mag_map_sample)
+    over_thresh.data[:, :] = 1000
 
     smooth_under, fl_under, mask_under = smooth_los_threshold(under_thresh, thresh=500 * u.Gauss)
     smooth_over, fl_over, mask_over = smooth_los_threshold(over_thresh, thresh=500 * u.Gauss)

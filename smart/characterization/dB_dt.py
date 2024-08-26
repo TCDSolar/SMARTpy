@@ -4,8 +4,8 @@ import astropy.units as u
 
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 
+from smart.differential_rotation import diff_rotation
 from smart.map_processing import get_cosine_correction
-from smart.segmentation.differential_rotation import diff_rotation
 
 
 def cosine_weighted_area_map(im_map: Map, feature_mask):
