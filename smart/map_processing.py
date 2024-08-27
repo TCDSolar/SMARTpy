@@ -7,7 +7,13 @@ import astropy.units as u
 
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 
-__all__ = ["map_threshold", "get_cosine_correction", "cosine_correction", "smooth_los_threshold"]
+__all__ = [
+    "map_threshold",
+    "get_cosine_correction",
+    "cosine_correction",
+    "smooth_los_threshold",
+    "smart_prep",
+]
 
 
 def map_threshold(im_map):
@@ -110,21 +116,17 @@ def get_cosine_correction(im_map: Map):
     """
 
     coordinates = all_coordinates_from_map(im_map)
-    x = coordinates.Tx.to(u.arcsec)
-    y = coordinates.Ty.to(u.arcsec)
+    on_disk = coordinate_is_on_solar_disk(coordinates)
 
-    radial_angle = np.arccos(np.cos(x) * np.cos(y))
+    cos_correction = np.ones_like(im_map.data)
+
+    radial_angle = np.arccos(np.cos(coordinates.Tx[on_disk]) * np.cos(coordinates.Ty[on_disk]))
     cos_cor_ratio = (radial_angle / im_map.rsun_obs).value
     cos_cor_ratio = np.clip(cos_cor_ratio, -1, 1)
 
-    cos_correction = 1 / (np.cos(np.arcsin(cos_cor_ratio)))
+    cos_correction[on_disk] = 1 / (np.cos(np.arcsin(cos_cor_ratio)))
 
-    on_disk = coordinate_is_on_solar_disk(coordinates)
-    cos_correction[~on_disk] = 1
-    off_limb = np.zeros_like(cos_correction)
-    off_limb[on_disk] = 1
-
-    return cos_correction, radial_angle, off_limb
+    return cos_correction
 
 
 def cosine_correction(im_map: Map, cosmap=None):
@@ -146,7 +148,7 @@ def cosine_correction(im_map: Map, cosmap=None):
 
     """
     if cosmap is None:
-        cosmap = get_cosine_correction(im_map)[0]
+        cosmap = get_cosine_correction(im_map)
 
     scale = (im_map.scale[0] + im_map.scale[1]) / 2
 
@@ -156,3 +158,13 @@ def cosine_correction(im_map: Map, cosmap=None):
 
     corrected_data = im_map.data * cosmap * u.Gauss
     return corrected_data
+
+
+def smart_prep(im_map):
+    """
+    todo docstring
+    """
+    thresholded_map = map_threshold(im_map)
+    smooth_map, filtered_labels, mask_sizes = smooth_los_threshold(thresholded_map)
+    cos_correction = get_cosine_correction(smooth_map)
+    return thresholded_map, cos_correction

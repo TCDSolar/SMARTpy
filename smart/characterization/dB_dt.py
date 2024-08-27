@@ -7,8 +7,10 @@ from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 from smart.differential_rotation import diff_rotation
 from smart.map_processing import get_cosine_correction
 
+__all__ = ["cosine_weighted_area_map", "extract_features", "dB_dt", "get_properties"]
 
-def cosine_weighted_area_map(im_map: Map, feature_mask):
+
+def cosine_weighted_area_map(im_map: Map):
     """
     Calculate the cosine-weighted area map for a feature and determine the feature's total area.
 
@@ -26,17 +28,15 @@ def cosine_weighted_area_map(im_map: Map, feature_mask):
     area_map : astropy.units.quantity.Quantity
         Area map corrected for cosine projection.
     """
-    cos_cor = get_cosine_correction(im_map)[0]
+    cos_cor = get_cosine_correction(im_map)
 
     m_per_arcsec = im_map.rsun_meters / im_map.rsun_obs
     pixel_area = (im_map.scale[0] * m_per_arcsec) * (im_map.scale[1] * m_per_arcsec)
     pixel_area = pixel_area * u.pix**2
 
-    area_map = feature_mask * pixel_area * cos_cor
+    area_map = pixel_area * cos_cor
 
-    total_area = np.sum(area_map)
-
-    return total_area, area_map
+    return area_map
 
 
 def extract_features(sorted_labels):
@@ -96,41 +96,6 @@ def dB_dt(current_map: Map, previous_map: Map):
     return dB_dt, dt
 
 
-def get_flux_emergence_rates(im_map, sorted_labels, dB_dt, dt):
-    """
-    Calculate the flux emergence rate for each identified feature on the magnetogram.
-
-    Parameters
-    ----------
-    im_map : Map
-        Processed SunPy magnetogram map.
-    sorted_labels : numpy.ndarray
-        An array where each unique label corresponds to a different feature on the solar disk.
-    dB_dt : Map
-        Map showcasing the change in magnetic field strength over time.
-    dt : Quantity
-        The time interval over which the change in magnetic field strength was measured.
-
-    Returns
-    -------
-    emergence_rates : list of Quantity
-        A list containing values for the flux emergence rate for each labelled feature in Gauss per second.
-    """
-    feature_masks = extract_features(sorted_labels)
-
-    emergence_rates = []
-    for feature_mask in feature_masks:
-        area_map, total_area = cosine_weighted_area_map(im_map, feature_mask)
-
-        magnetic_flux = np.nansum(dB_dt.data * area_map)
-
-        flux_emergence_rate = magnetic_flux / dt
-
-        emergence_rates.append(flux_emergence_rate)
-
-    return emergence_rates
-
-
 def get_properties(im_map, dB_dt, dt, sorted_labels):
     """
     Calculate various properties for each detected feature.
@@ -154,13 +119,15 @@ def get_properties(im_map, dB_dt, dt, sorted_labels):
 
     feature_masks = extract_features(sorted_labels)
 
+    area_map = cosine_weighted_area_map(im_map)
+
     properties = []
     for i, feature_mask in enumerate(feature_masks, start=1):
-        total_area, area_map = cosine_weighted_area_map(im_map, feature_mask)
-
+        region_area_map = area_map * feature_mask
         dBdt_data = dB_dt.data * u.G
+        total_area = np.sum(region_area_map)
 
-        magnetic_flux = np.nansum(dBdt_data * area_map)
+        magnetic_flux = np.nansum(dBdt_data * region_area_map)
         flux_emergence_rate = magnetic_flux / dt
 
         B = im_map.data * feature_mask * u.G
