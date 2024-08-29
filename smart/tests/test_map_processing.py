@@ -8,7 +8,12 @@ import astropy.units as u
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 from sunpy.map.mapbase import GenericMap
 
-from smart.map_processing import cosine_correction, get_cosine_correction, map_threshold, smooth_los_threshold
+from smart.map_processing import (
+    calculate_cosine_correction,
+    cosine_correct_data,
+    map_threshold,
+    smooth_los_threshold,
+)
 
 
 @pytest.fixture
@@ -38,14 +43,14 @@ def test_map_threshold(mag_map_sample):
 
 
 def test_get_cosine_correction_shape(mag_map_sample):
-    cos_cor, d_angular, off_limb = get_cosine_correction(mag_map_sample)
+    cos_cor, d_angular, off_limb = calculate_cosine_correction(mag_map_sample)
     assert cos_cor.shape == mag_map_sample.data.shape, "cos_cor shape != hmi_nrt.data.shape"
     assert d_angular.shape == mag_map_sample.data.shape, "d_angular shape != im_map.data.shape"
     assert off_limb.shape == mag_map_sample.data.shape, "off_limb shape != im_map.data.shape"
 
 
 def test_get_cosine_correction_limits(mag_map_sample):
-    cos_cor, d_angular, off_limb = get_cosine_correction(mag_map_sample)
+    cos_cor, d_angular, off_limb = calculate_cosine_correction(mag_map_sample)
 
     edge = 0.99
     coordinates = all_coordinates_from_map(mag_map_sample)
@@ -70,7 +75,7 @@ def test_cosine_correction(mag_map_sample):
     fake_map = Map(los_radial, mag_map_sample.meta)
     fake_cosmap = np.ones((len(los_radial), len(los_radial)))
 
-    corrected_data = cosine_correction(fake_map, fake_cosmap)
+    corrected_data = cosine_correct_data(fake_map, fake_cosmap)
     corrected_data_value = corrected_data.to_value(u.Gauss)
     assert np.allclose(corrected_data_value, 1, atol=1e-4), "cosine corrected data not behaving as expected"
 

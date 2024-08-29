@@ -9,8 +9,8 @@ from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 
 __all__ = [
     "map_threshold",
-    "get_cosine_correction",
-    "cosine_correction",
+    "calculate_cosine_correction",
+    "cosine_correct_data",
     "smooth_los_threshold",
     "smart_prep",
 ]
@@ -18,7 +18,7 @@ __all__ = [
 
 def map_threshold(im_map):
     """
-     a map from a fits file and processing said map.
+    Set off disk pixels to black and clip the vmin and vmax of the map.
 
     Parameters
     ----------
@@ -68,7 +68,7 @@ def smooth_los_threshold(
         Map after applying Gaussian smoothing.
     filtered_labels : `numpy.ndarray`
         2D array with each pixel labelled.
-    mask_sizes : `numpy.ndarray`
+    mask_sizes : `~numpy.ndarray`
         Boolean array indicating the sizes of each labeled region.
 
     """
@@ -78,7 +78,7 @@ def smooth_los_threshold(
     sigma = (np.round(sigma * arcsec_to_pixel)).to_value(u.pix)
     min_size = (np.round(min_size * arcsec_to_pixel)).to_value(u.pix)
 
-    cosmap_data = cosine_correction(im_map)
+    cosmap_data = cosine_correct_data(im_map)
 
     negmask = cosmap_data < -thresh
     posmask = cosmap_data > thresh
@@ -96,9 +96,9 @@ def smooth_los_threshold(
     return smooth_map, filtered_labels, mask_sizes
 
 
-def get_cosine_correction(im_map: Map):
+def calculate_cosine_correction(im_map: Map):
     """
-    Get the cosine map and off-limb pixel map using WCS.
+    Find the cosine correction values for on-disk pixels.
 
     Parameters
     ----------
@@ -107,12 +107,9 @@ def get_cosine_correction(im_map: Map):
 
     Returns
     -------
-    cos_cor : `numpy.ndarray`
+    cos_correction : `~numpy.ndarray`
         Array of cosine correction factors for each pixel. Values greater than a threshold (edge) are set to 1.
-    d_angular : `numpy.ndarray`
-        Array of angular distances from the disk center in radians.
-    off_limb : `numpy.ndarray`
-        Binary array where pixels on the disk are 1 and pixels off the disk are 0.
+
     """
 
     coordinates = all_coordinates_from_map(im_map)
@@ -129,7 +126,7 @@ def get_cosine_correction(im_map: Map):
     return cos_correction
 
 
-def cosine_correction(im_map: Map, cosmap=None):
+def cosine_correct_data(im_map: Map, cosmap=None):
     """
     Perform magnetic field cosine correction.
 
@@ -139,7 +136,7 @@ def cosine_correction(im_map: Map, cosmap=None):
         Processed SunPy magnetogram map.
     cosmap : `numpy.ndarray`, optional
         An array of the cosine correction factors for each pixel.
-        If not provided, computed using get_cosine_correction.
+        If not provided, computed using calculate_cosine_correction.
 
     Returns
     -------
@@ -148,7 +145,7 @@ def cosine_correction(im_map: Map, cosmap=None):
 
     """
     if cosmap is None:
-        cosmap = get_cosine_correction(im_map)
+        cosmap = calculate_cosine_correction(im_map)
 
     scale = (im_map.scale[0] + im_map.scale[1]) / 2
 
@@ -162,9 +159,22 @@ def cosine_correction(im_map: Map, cosmap=None):
 
 def smart_prep(im_map):
     """
-    todo docstring
+    Prepare map for use in segmentation and characterization processes.
+
+    Parameters
+    ----------
+    im_map : `~sunpy.map.Map`
+        Unprocessed SunPy magnetogram map.
+
+    Returns
+    -------
+    thresholded_map : `~sunpy.map.Map`
+        Processed SunPy magnetogram map.
+    cos_correctiom : `~numpy.ndarray`
+        Array of cosine correction factors for each pixel.
+
     """
     thresholded_map = map_threshold(im_map)
-    smooth_map, filtered_labels, mask_sizes = smooth_los_threshold(thresholded_map)
-    cos_correction = get_cosine_correction(smooth_map)
+    smooth_map, *_ = smooth_los_threshold(thresholded_map)
+    cos_correction = calculate_cosine_correction(smooth_map)
     return thresholded_map, cos_correction
