@@ -5,7 +5,7 @@ import astropy.units as u
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 
 from smart.differential_rotation import diff_rotation
-from smart.map_processing import get_cosine_correction
+from smart.map_processing import calculate_cosine_correction
 
 __all__ = ["cosine_weighted_area_map", "extract_features", "dB_dt", "get_properties"]
 
@@ -28,7 +28,7 @@ def cosine_weighted_area_map(im_map: Map):
     area_map : astropy.units.quantity.Quantity
         Area map corrected for cosine projection.
     """
-    cos_cor = get_cosine_correction(im_map)
+    cos_cor = calculate_cosine_correction(im_map)
 
     m_per_arcsec = im_map.rsun_meters / im_map.rsun_obs
     pixel_area = (im_map.scale[0] * m_per_arcsec) * (im_map.scale[1] * m_per_arcsec)
