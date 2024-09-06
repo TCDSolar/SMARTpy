@@ -62,7 +62,7 @@ write_to = "smart/_version.py"
   number_incorrect_long = "The number in the changelog file you added does not match the number of this pull request. Please rename the file."
 
 [tool.towncrier]
-  package = "CHIMERApy"
+  package = "smart"
   filename = "CHANGELOG.rst"
   directory = "changelog/"
   issue_format = "`#{issue} <https://github.com/TCDSolar/SMARTpy/pull/{issue}>`__"
