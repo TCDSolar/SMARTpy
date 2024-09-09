@@ -17,11 +17,11 @@ from smart.processing import smart_prep
 #
 
 hmi_map = Map(
-    "http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_230000_TAI.fits"
+    "https://sky.dias.ie/index.php/s/ZnkB2ZF6NJBnCfp/download/hmi.M_720s.20240606_230000_TAI.fits"
     # "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_230000_TAI.3.magnetogram.fits"
 )
 hmi_map_prev = Map(
-    "http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_000000_TAI.fits"
+    "https://sky.dias.ie/index.php/s/rwGscZHxqEya3Ct/download/hmi.M_720s.20240606_000000_TAI.fits"
     # "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_000000_TAI.3.magnetogram.fits"
 )
 
