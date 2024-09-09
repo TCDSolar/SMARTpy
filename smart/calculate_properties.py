@@ -6,7 +6,7 @@ from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 
 from smart.differential_rotation import diff_rotation
 from smart.indexed_grown_mask import index_and_grow_mask
-from smart.map_processing import calculate_cosine_correction, smart_prep
+from smart.processing import calculate_cosine_correction, smart_prep
 
 __all__ = ["cosine_weighted_area_map", "extract_features", "dB_dt", "get_properties"]
 

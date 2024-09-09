@@ -13,7 +13,7 @@ from sunpy.map import Map
 from smart.calculate_properties import cosine_weighted_area_map, dB_dt, extract_features, get_properties
 from smart.differential_rotation import diff_rotation
 from smart.indexed_grown_mask import index_and_grow_mask, plot_indexed_grown_mask
-from smart.map_processing import (
+from smart.processing import (
     calculate_cosine_correction,
     cosine_correct_data,
     map_threshold,
@@ -31,10 +31,10 @@ from smart.map_processing import (
 #
 # We start by creating a sunpy.Map from our .fits file.
 
-# hmi_map = Map("http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_230000_TAI.fits")
-hmi_map = Map(
-    "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_230000_TAI.3.magnetogram.fits"
-)
+hmi_map = Map("http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_230000_TAI.fits")
+# hmi_map = Map(
+#     "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_230000_TAI.3.magnetogram.fits"
+# )
 
 #####################################################
 # We'll also plot this map to see how it looks before applying any of the SMART processes.
@@ -64,10 +64,10 @@ plt.imshow(corrected_data.value)
 # This time we'll simply use the `~smart.map_processing.smart_prep` function to create our thresholded map and calculate the corrected data. This function performs the
 # `~smart.map_processing.smooth_los_threshold`, `~smart.map_processing.calculate_cosine_correction`, and `~smart.map_processing.cosine_correct_data` functions.
 
-# hmi_map_prev = Map("http://jsoc.stanford.edu/data/hmi/fits/2024/06/05/hmi.M_720s.20240605_230000_TAI.fits")
-hmi_map_prev = Map(
-    "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_000000_TAI.3.magnetogram.fits"
-)
+hmi_map_prev = Map("http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_000000_TAI.fits")
+# hmi_map_prev = Map(
+#     "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_000000_TAI.3.magnetogram.fits"
+# )
 thresholded_map_prev, cos_correction_prev = smart_prep(hmi_map_prev)
 
 #####################################################

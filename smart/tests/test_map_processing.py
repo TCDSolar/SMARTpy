@@ -8,7 +8,7 @@ import astropy.units as u
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 from sunpy.map.mapbase import GenericMap
 
-from smart.map_processing import (
+from smart.processing import (
     calculate_cosine_correction,
     cosine_correct_data,
     map_threshold,
@@ -18,7 +18,7 @@ from smart.map_processing import (
 
 @pytest.fixture
 def hmi_nrt():
-    return "http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_230000_TAI.fits"
+    return "https://sky.dias.ie/index.php/s/ZnkB2ZF6NJBnCfp/download/hmi.M_720s.20240606_230000_TAI.fits"
 
 
 @pytest.fixture
@@ -43,28 +43,20 @@ def test_map_threshold(mag_map_sample):
 
 
 def test_get_cosine_correction_shape(mag_map_sample):
-    cos_cor, d_angular, off_limb = calculate_cosine_correction(mag_map_sample)
+    cos_cor = calculate_cosine_correction(mag_map_sample)
     assert cos_cor.shape == mag_map_sample.data.shape, "cos_cor shape != hmi_nrt.data.shape"
-    assert d_angular.shape == mag_map_sample.data.shape, "d_angular shape != im_map.data.shape"
-    assert off_limb.shape == mag_map_sample.data.shape, "off_limb shape != im_map.data.shape"
 
 
 def test_get_cosine_correction_limits(mag_map_sample):
-    cos_cor, d_angular, off_limb = calculate_cosine_correction(mag_map_sample)
+    cos_cor = calculate_cosine_correction(mag_map_sample)
 
     edge = 0.99
-    coordinates = all_coordinates_from_map(mag_map_sample)
-    on_disk = coordinate_is_on_solar_disk(coordinates)
-    off_disk = ~on_disk
+    # coordinates = all_coordinates_from_map(mag_map_sample)
+    # on_disk = coordinate_is_on_solar_disk(coordinates)
+    # off_disk = ~on_disk
 
     assert np.all(cos_cor >= 0), "cos_cor lower limits incorrect"
     assert np.all(cos_cor <= 1 / np.cos(np.arcsin(edge))), "cos_cor upper limits incorrect"
-
-    assert np.all(d_angular >= np.arcsin(-1) * u.rad), "d_angular lower limits incorrect"
-    assert np.all(d_angular <= np.arcsin(1) * u.rad), "d_angular upper limist incorrect"
-
-    assert np.all(off_limb[off_disk] == 0), "not all off_disk values = 0"
-    assert np.all(off_limb[on_disk] == 1), "not all on_disk values = 1"
 
 
 def test_cosine_correction(mag_map_sample):
