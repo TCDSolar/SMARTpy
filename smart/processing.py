@@ -41,7 +41,7 @@ def map_threshold(im_map):
 def smooth_los_threshold(
     im_map: Map,
     thresh: u.Quantity[u.Gauss] = 100 * u.Gauss,
-    dilation_radius: u.Quantity[u.arcsec] = 2 * u.arcsec,
+    dilation_radius: u.Quantity[u.arcsec] = 5 * u.arcsec,
     sigma: u.Quantity[u.arcsec] = 10 * u.arcsec,
     min_size: u.Quantity[u.arcsec] = 2250 * u.arcsec,
 ):
@@ -85,7 +85,7 @@ def smooth_los_threshold(
     mask = negmask | posmask
 
     dilated_mask = ski.morphology.binary_dilation(mask, disk(dilation_radius))
-    smoothed_data = ski.filters.gaussian(np.nan_to_num(cosmap_data) * ~dilated_mask, sigma)
+    smoothed_data = ski.filters.gaussian(np.nan_to_num(cosmap_data) * dilated_mask, sigma)
     smooth_map = Map(smoothed_data, im_map.meta)
 
     labels = ski.measure.label(dilated_mask)

@@ -11,16 +11,18 @@ from sunpy.map import Map
 from smart.calculate_properties import dB_dt, get_properties, smart_indentify_and_characterize
 from smart.differential_rotation import diff_rotation
 from smart.indexed_grown_mask import index_and_grow_mask
-from smart.map_processing import smart_prep
+from smart.processing import smart_prep
 
 #####################################################
 #
 
 hmi_map = Map(
-    "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_230000_TAI.3.magnetogram.fits"
+    "http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_230000_TAI.fits"
+    # "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_230000_TAI.3.magnetogram.fits"
 )
 hmi_map_prev = Map(
-    "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_000000_TAI.3.magnetogram.fits"
+    "http://jsoc.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_000000_TAI.fits"
+    # "https://solmon.dias.ie/data/2024/06/06/HMI/fits/hmi.m_720s_nrt.20240606_000000_TAI.3.magnetogram.fits"
 )
 
 threshold_map, cos_correction = smart_prep(hmi_map)

@@ -7,13 +7,27 @@ import astropy.units as u
 
 from sunpy.map import Map
 
-from smart.map_processing import smooth_los_threshold
+from smart.processing import smooth_los_threshold
 
 __all__ = ["index_and_grow_mask", "plot_indexed_grown_mask"]
 
 
+def prepare_magnetogram(mag: Map):
+    r"""
+    Prepare magnetogram for and extract some information
+
+    Parameters
+    ----------
+    mag
+
+    Returns
+    -------
+
+    """
+
+
 def index_and_grow_mask(
-    current_map: Map, rotated_map: Map, dilation_radius: u.Quantity[u.arcsec] = 2.5 * u.arcsec
+    current_map: Map, rotated_map: Map, dilation_radius: u.Quantity[u.arcsec] = 5 * u.arcsec
 ):
     """
     Performing Indexing and Growing of the Mask (hence the name IGM).
@@ -92,19 +106,16 @@ def plot_indexed_grown_mask(current_map: Map, sorted_labels, contours=True, labe
     unique_labels = unique_labels[unique_labels != 0]
 
     if contours:
-        for label_value in unique_labels:
-            region_mask = sorted_labels == label_value
-            ax.contour(region_mask, colors="purple", linewidths=1)
+        ax.contour(sorted_labels)
 
     if labels:
-        for label_value in unique_labels:
-            region_mask = sorted_labels == label_value
-            region = ski.measure.regionprops(region_mask.astype(int))[0]
+        regions = ski.measure.regionprops(sorted_labels)
+        for label, region in zip(unique_labels, regions):
             centroid = region.centroid
             ax.text(
                 centroid[1],
                 centroid[0],
-                str(label_value),
+                str(label),
                 color="red",
                 fontsize=12,
                 weight="bold",

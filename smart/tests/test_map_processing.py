@@ -8,7 +8,7 @@ import astropy.units as u
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 from sunpy.map.mapbase import GenericMap
 
-from smart.map_processing import (
+from smart.processing import (
     calculate_cosine_correction,
     cosine_correct_data,
     map_threshold,
