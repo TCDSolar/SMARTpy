@@ -16,12 +16,12 @@ from smart.processing import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def hmi_nrt():
     return "https://jsoc1.stanford.edu/data/hmi/fits/2024/06/06/hmi.M_720s.20240606_230000_TAI.fits"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def mag_map_sample(hmi_nrt):
     return map_threshold(Map(hmi_nrt))
 
