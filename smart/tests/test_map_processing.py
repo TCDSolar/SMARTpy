@@ -85,9 +85,7 @@ def test_smooth_los_threshold(mag_map_sample):
     assert isinstance(smooth_over, type(over_thresh)), "smooth_over is no longer a Map"
 
     assert np.sum(fl_under) == 0, "fl should all be False when all data is below threshold"
-    assert np.sum(fl_over) == len(
-        fl_over.flatten()
-    ), "fl should all be True when all data is above threshold "
+    assert np.sum(fl_over) == len(fl_over.flatten()), "fl should all be True when all data is above threshold "
 
     assert np.sum(mask_under) == 0, "no regions should have been detected in 'under_thresh'"
     assert np.sum(mask_over) > 0, "background region should have been detected in 'over thresh'"
