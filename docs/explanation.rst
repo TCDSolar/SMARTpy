@@ -90,6 +90,12 @@ The IDL library tracks regions across a time series with YAFTA
 lifetime, and records merge / split events.  Tracking and the HEK/JSON export
 (``ar_smart2hek``) are **not yet ported**.
 
+
+https://solarmuri.ssl.berkeley.edu/~welsch/public/software/YAFTA/YAFTA_10/
+https://github.com/frubioda/YAFTA
+
+https://laptrack.readthedocs.io/en/stable/examples/napari_interactive_fix.html
+
 Port status
 ===========
 
