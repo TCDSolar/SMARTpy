@@ -5,12 +5,14 @@ from skimage.morphology import disk
 
 import astropy.units as u
 
+from sunpy.coordinates import Heliocentric
 from sunpy.map import Map, all_coordinates_from_map, coordinate_is_on_solar_disk
 
 __all__ = [
     "remove_off_disk",
     "calculate_cosine_correction",
     "cosine_correct_data",
+    "threshold_los",
     "smooth_los_threshold",
     "smart_prep",
 ]
@@ -103,15 +105,13 @@ def smooth_los_threshold(
     sigma = (np.round(sigma * arcsec_to_pixel)).to_value(u.pix)
     min_area = np.round(min_area * arcsec_to_pixel**2).to_value(u.pix**2)
 
-    # Smooth the raw magnetogram, zero sub-threshold (noise) pixels, then deproject
-    # the line-of-sight field to radial.
-    smoothed_data = ski.filters.gaussian(np.nan_to_num(im_map.data), sigma)
-    smoothed_data[np.abs(smoothed_data) < thresh.to_value(u.Gauss)] = 0
-    corrected_data = cosine_correct_data(Map(smoothed_data, im_map.meta))
-    smooth_map = Map(corrected_data.to_value(u.Gauss), im_map.meta)
+    # Smooth the raw magnetogram, then apply the noise threshold and LOS correction
+    # (the paper's "TL Process").
+    smoothed = Map(ski.filters.gaussian(np.nan_to_num(im_map.data), sigma), im_map.meta)
+    smooth_map = threshold_los(smoothed, thresh=thresh)
 
     # Un-grown binary detection mask M_t.
-    mask = np.abs(corrected_data.to_value(u.Gauss)) >= thresh.to_value(u.Gauss)
+    mask = np.abs(smooth_map.data) >= thresh.to_value(u.Gauss)
     if not grow:
         return smooth_map, mask, None
 
@@ -130,19 +130,21 @@ def calculate_cosine_correction(im_map: Map, limit: float = 0.99):
     r"""
     Find the cosine (:math:`1/\mu`) correction values for on-disk pixels.
 
-    For each on-disk pixel the heliocentric angle :math:`\theta` is found from
-    its angular distance from disk centre, and the line-of-sight to radial
-    correction factor is :math:`1/\cos\theta`.  Off-disk pixels are set to 1.
+    :math:`\mu = \cos\theta` (with :math:`\theta` the heliocentric angle) is taken
+    from each pixel's heliocentric position via a `~sunpy.coordinates.Heliocentric`
+    transform, so the finite Sun--observer distance is included exactly. The
+    line-of-sight to radial correction factor is :math:`1/\mu`. Off-disk pixels
+    are set to 1.
 
     Parameters
     ----------
     im_map : `~sunpy.map.Map`
         Processed SunPy magnetogram map.
     limit : `float`, optional
-        Cap on :math:`\sin\theta`, so the correction cannot exceed
-        ``1 / cos(arcsin(limit))``.  The default of 0.99 caps it at ~7.1
-        (:math:`\theta \approx 82^\circ`), beyond which the deprojection is
-        unreliable.
+        Near the limb :math:`\mu` is clamped to a floor of ``cos(arcsin(limit))``,
+        so the correction cannot exceed ``1 / cos(arcsin(limit))``. The default of
+        0.99 caps it at ~7.1 (:math:`\theta \approx 82^\circ`), beyond which the
+        deprojection is unreliable.
 
     Returns
     -------
@@ -157,16 +159,16 @@ def calculate_cosine_correction(im_map: Map, limit: float = 0.99):
     coordinates = all_coordinates_from_map(im_map)
     on_disk = coordinate_is_on_solar_disk(coordinates)
 
+    heliocentric = coordinates[on_disk].transform_to(Heliocentric(observer=im_map.observer_coordinate))
+    z = heliocentric.z.to_value(u.m)
+    # Fix edge pixels where ray-tracing discriminant evaluated to < 0
+    z = np.nan_to_num(z, nan=0.0)
+
+    mu = z / im_map.rsun_meters.to_value(u.m)
+    mu = np.clip(mu, np.sqrt(1.0 - limit**2), 1.0)
+
     cos_correction = np.ones_like(im_map.data, dtype=float)
-
-    radial_angle = np.arccos(np.cos(coordinates.Tx[on_disk]) * np.cos(coordinates.Ty[on_disk]))
-    sin_theta = (radial_angle / im_map.rsun_obs).decompose()
-
-    # Clamp within [0, limit] since radial distance is always non-negative
-    sin_theta = np.clip(sin_theta, 0.0, limit)
-
-    # 1 / cos(arcsin(x)) is algebraically identical to 1 / sqrt(1 - x^2)
-    cos_correction[on_disk] = 1.0 / np.sqrt(1.0 - sin_theta**2)
+    cos_correction[on_disk] = 1.0 / mu
 
     return cos_correction
 
@@ -199,6 +201,35 @@ def cosine_correct_data(im_map: Map, cosmap=None, limit: float = 0.99):
 
     corrected_data = im_map.data * cosmap * u.Gauss
     return corrected_data
+
+
+@u.quantity_input
+def threshold_los(im_map: Map, thresh: u.Quantity[u.Gauss] = 70 * u.Gauss):
+    """
+    Noise-threshold and LOS-correct a magnetogram (the paper's "TL Process").
+
+    Pixels with ``|B| < thresh`` are zeroed and the surviving line-of-sight field is
+    deprojected to radial with `cosine_correct_data`. Unlike `smooth_los_threshold`
+    there is no smoothing; this is the characterization-stage processing of Higgins
+    et al. (2011), Section 2.2.
+
+    Parameters
+    ----------
+    im_map : `~sunpy.map.Map`
+        Magnetogram map (off-disk pixels should already be NaN).
+    thresh : `~astropy.units.Quantity`, optional
+        Noise threshold (default 70 G).
+
+    Returns
+    -------
+    `~sunpy.map.Map`
+        The noise-thresholded, LOS-corrected magnetogram (units of Gauss).
+
+    """
+    data = np.array(im_map.data, dtype=float)
+    data[np.abs(data) < thresh.to_value(u.Gauss)] = 0
+    corrected = cosine_correct_data(Map(data, im_map.meta))
+    return Map(corrected.to_value(u.Gauss), im_map.meta)
 
 
 def smart_prep(im_map, **kwargs):
