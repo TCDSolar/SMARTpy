@@ -129,3 +129,6 @@ RF101 = "ruff extended linting option disabled, enable to use bugbear"
 
 [tool.mypy]
 python_version = "3.12"
+exclude = [
+    "^smart/version.py$",
+]
